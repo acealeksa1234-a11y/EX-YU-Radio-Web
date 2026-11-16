@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon-192.png">
   <link rel="apple-touch-icon" href="./assets/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=4">
+  <link rel="stylesheet" href="./styles.css?v=5">
   <title>EX-YU Radio · Aleksandar Aleksovski</title>
 </head>
 <body data-theme="neon">
@@ -86,12 +86,49 @@
 
   <dialog id="addDialog" class="app-dialog compact-dialog"><div class="dialog-header"><div><div class="overline">DODAJ NEŠTO SVOJE</div><h2>Nova radio-stanica</h2></div><button class="close-dialog" data-close="addDialog" aria-label="Zatvori"><svg><use href="#i-x"/></svg></button></div><form id="addStationForm" class="form-body"><label>Naziv stanice<input required name="name" placeholder="Npr. Moj omiljeni radio" maxlength="90"></label><label>Zemlja<select name="countrycode"><option value="MK">🇲🇰 Makedonija</option><option value="RS">🇷🇸 Srbija</option><option value="BA">🇧🇦 Bosna i Hercegovina</option><option value="HR">🇭🇷 Hrvatska</option><option value="ME">🇲🇪 Crna Gora</option><option value="SI">🇸🇮 Slovenija</option><option value="DE">🇩🇪 Nemačka</option></select></label><label>Internet adresa streama<input required name="url" type="url" placeholder="https://radio.example/live.mp3"></label><label>Logo (nije obavezno)<input name="favicon" type="url" placeholder="https://.../logo.png"></label><p class="input-tip">Najpouzdanije rade direktni HTTPS MP3/AAC streamovi. Link do web stranice radija nije isto što i stream.</p><div class="form-actions"><button type="button" class="btn soft" data-close="addDialog">Odustani</button><button type="submit" class="btn primary">Sačuvaj stanicu</button></div></form></dialog>
 
-  <dialog id="installDialog" class="app-dialog install-dialog"><div class="dialog-header"><div><div class="overline">EX-YU RADIO U DŽEPU</div><h2>Instaliraj besplatno</h2></div><button class="close-dialog" data-close="installDialog" aria-label="Zatvori"><svg><use href="#i-x"/></svg></button></div><div class="install-content"><p>Na telefonu dobijaš svoju ikonicu i otvaraš radio bez browser trake. Nema pretplate.</p><div class="qr-box"><img id="qrImage" alt="QR kod za otvaranje EX-YU Radio aplikacije" width="190" height="190"><div class="qr-fallback" id="qrFallback" hidden>QR nije dostupan — koristi link ispod.</div></div><div class="share-line"><input type="text" id="appLink" readonly aria-label="Adresa aplikacije"><button id="copyLinkBtn" class="btn soft">Kopiraj</button></div><div class="install-instructions"><div><span></span><p><strong>iPhone · Safari</strong><br>Otvori link baš u <b>Safariju</b>, ne unutar ChatGPT-a. Meni stranice → Share → <b>Add to Home Screen</b> → uključi „Open as Web App“ → Add.</p></div><div><span>◈</span><p><strong>Android · Chrome</strong><br>Otvori link → meni ⋮ → <b>Install app</b> ili „Add to Home screen“.</p></div></div><p class="safari-tip">Ako na iPhone-u nemaš Share: pritisni „Kopiraj“, otvori Safari kao posebnu aplikaciju i zalepi link u adresnu liniju.</p><button id="nativeInstallBtn" class="btn primary install-native" hidden>Instaliraj aplikaciju</button><small>Web-aplikacija se ažurira bez ponovne instalacije. Proveru nađeš na kružnoj strelici ↻ gore. Apple CarPlay i Android Auto nisu podržani u ovoj verziji.</small></div></dialog>
+  <dialog id="installDialog" class="app-dialog install-dialog">
+    <div class="dialog-header">
+      <div><div class="overline">JEDAN QR KOD, SVI UREĐAJI</div><h2>Instaliraj EX-YU Radio</h2></div>
+      <button class="close-dialog" data-close="installDialog" aria-label="Zatvori"><svg><use href="#i-x"/></svg></button>
+    </div>
+    <div class="install-content">
+      <p>QR kod otvara ovaj radio na telefonu. Windows i Android imaju pravi instalacioni fajl; iPhone se dodaje kroz Safari.</p>
+      <div class="qr-box">
+        <img id="qrImage" alt="QR kod za EX-YU Radio" width="190" height="190">
+        <div class="qr-fallback" id="qrFallback" hidden>QR nije dostupan — koristi link ispod.</div>
+      </div>
+      <div class="share-line">
+        <input type="text" id="appLink" readonly aria-label="Adresa aplikacije">
+        <button id="copyLinkBtn" class="btn soft">Kopiraj</button>
+      </div>
+      <div class="installer-downloads">
+        <a class="btn primary" href="https://github.com/acealeksa1234-a11y/EX-YU-Radio-Web/releases/download/installers-v1/EX-YU-Radio-Setup.exe" target="_blank" rel="noopener noreferrer">⬇ Windows Setup.exe</a>
+        <a class="btn primary" href="https://github.com/acealeksa1234-a11y/EX-YU-Radio-Web/releases/download/installers-v1/EX-YU-Radio-Android.apk" target="_blank" rel="noopener noreferrer">⬇ Android APK</a>
+      </div>
+      <div class="install-instructions">
+        <div class="iphone-install-guide" id="iphone-install-guide">
+          <span></span>
+          <p><strong>iPhone · obavezno Safari</strong>
+          1. Kopiraj gornji link i otvori ga direktno u <b>Safariju</b> (ne u ChatGPT-u).
+          2. U Safariju pritisni <b>Share / Deli</b> (kvadrat sa strelicom).
+          3. Izaberi <b>Add to Home Screen / Dodaj na početni ekran</b>, zatim <b>Add</b>.
+          Ikonica ostaje na telefonu. iOS ne dozvoljava direktno Install dugme bez Apple potpisa.</p>
+        </div>
+        <div>
+          <span>◈</span>
+          <p><strong>Android · APK</strong>
+          Pritisni „Android APK“ iznad, otvori preuzeti fajl i potvrdi instalaciju. Android može tražiti dozvolu za instaliranje iz browsera.</p>
+        </div>
+      </div>
+      <button id="nativeInstallBtn" class="btn primary install-native" hidden>Instaliraj web-aplikaciju</button>
+      <small>Web-sadržaj se ažurira automatski. Za novu Android/Windows instalaciju koristi gore navedena dugmad. CarPlay i Android Auto nisu deo ovih paketa.</small>
+    </div>
+  </dialog>
 
   <dialog id="playingDialog" class="app-dialog mini-playing-dialog"><div class="dialog-header"><div><div class="overline">SADA SVIRA</div><h2>Radio plejer</h2></div><button class="close-dialog" data-close="playingDialog" aria-label="Zatvori"><svg><use href="#i-x"/></svg></button></div><div class="playing-sheet"><img id="sheetArt" src="./assets/icon-512.png" alt=""><h2 id="sheetName">EX-YU Radio</h2><p id="sheetMeta">Izaberi stanicu</p><div class="player-main-controls"><button class="control-btn" data-player="prev"><svg><use href="#i-prev"/></svg></button><button class="control-play" data-player="toggle"><svg><use href="#i-play"/></svg></button><button class="control-btn" data-player="next"><svg><use href="#i-next"/></svg></button></div><label class="sheet-volume"><svg><use href="#i-volume"/></svg><input id="sheetVolume" type="range" min="0" max="100" value="65" aria-label="Jačina zvuka"></label><p id="sheetStatus">Spremno</p></div></dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <audio id="audio" preload="none"></audio>
-  <script src="./app.js?v=4" defer></script>
+  <script src="./app.js?v=5" defer></script>
 </body>
 </html>

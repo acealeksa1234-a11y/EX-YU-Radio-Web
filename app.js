@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const STORAGE_KEY = 'exyu-radio-pwa-v1';
   const CATALOG_KEY = 'exyu-radio-catalog-v2';
-  const APP_VERSION = 4;
+  const APP_VERSION = 5;
   const THEMES = new Set(['neon', 'midnight', 'gold', 'ocean', 'sunset', 'forest', 'light']);
   const COUNTRIES = [
     {code:'MK',name:'Makedonija',icon:'🇲🇰'},
@@ -426,9 +426,11 @@
     qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(url);
     qr.onerror = () => { qr.hidden = true; $('qrFallback').hidden = false; };
     const btn = $('nativeInstallBtn');
-    btn.hidden = !!isInstalled();
+    // Safari cannot open an installation prompt. The iPhone steps are always
+    // visible in the dialog, so don't display a button which cannot install.
+    btn.hidden = isIOS() || !!isInstalled();
     btn.disabled = false;
-    btn.textContent = state.deferredInstall ? 'Instaliraj aplikaciju' : isIOS() ? 'Pokaži korake za iPhone' : 'Kako da instaliram?';
+    btn.textContent = state.deferredInstall ? 'Instaliraj web-aplikaciju' : 'Kako da dodam ikonicu?';
   }
   async function copyAppLink() {
     try { await navigator.clipboard.writeText(installURL()); toast('Link kopiran!'); }
