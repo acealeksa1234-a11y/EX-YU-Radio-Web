@@ -50,6 +50,10 @@ body[data-theme="light"]{color-scheme:light;--bg:#edf4fa;--bg-deep:#e6eff7;--pan
 /* PWA update feedback */
 .update-banner{display:flex;gap:16px;align-items:center;justify-content:space-between;margin:-6px 0 18px;padding:12px 15px;border-radius:13px;border:1px solid rgba(var(--accent-rgb),.45);background:rgba(var(--accent-rgb),.11);color:var(--text);font-size:12px;font-weight:800}
 .update-banner[hidden]{display:none}
+/* Force the HTML hidden attribute to override button and layout display rules. */
+[hidden]{display:none!important}
+.install-instructions>div.guide-highlight{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.23),0 0 22px rgba(var(--accent-rgb),.18);animation:install-guide-glow .8s ease-in-out 2}
+@keyframes install-guide-glow{50%{box-shadow:0 0 0 4px rgba(var(--accent-rgb),.35),0 0 30px rgba(var(--accent-rgb),.26)}}
 .update-banner .btn{white-space:nowrap;min-height:37px}
 .update-ready{color:var(--accent)!important;box-shadow:0 0 0 1px rgba(var(--accent-rgb),.3)}
 .install-content .safari-tip{margin:13px 0 15px;border:1px solid rgba(var(--accent-rgb),.24);border-radius:11px;padding:12px;background:rgba(var(--accent-rgb),.08);font-size:11px;line-height:1.55}

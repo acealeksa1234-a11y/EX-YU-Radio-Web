@@ -1,8 +1,8 @@
-# EX-YU Radio — mobilna web aplikacija (PWA)
+# EX-YU Radio — web aplikacija i instalacioni paketi
 
 Autor: **Aleksandar Aleksovski**.
 
-Ovaj projekat je zasebna PWA verzija postojeće EX-YU Radio aplikacije. Ne menja već instalirane Windows, Android ili iPhone programe.
+Ovaj projekat sadrži zajedničku web-aplikaciju, Windows instalacioni program i Android APK. Ne menja već instalirane ranije verzije. Windows i Android paketi prikazuju istu, stalno ažuriranu radio-aplikaciju sa GitHub Pages adrese.
 
 ## Šta dobijaš
 
@@ -13,6 +13,17 @@ Ovaj projekat je zasebna PWA verzija postojeće EX-YU Radio aplikacije. Ne menja
 - Mobilni dizajn, iPhone/Android ikonicu i QR kod za otvaranje aplikacije.
 - Detekciju nove verzije, obaveštenje „Ažuriraj sada“ i ručnu proveru preko kružne strelice. Ažuriranje ne zahteva ponovnu instalaciju.
 - Izgled radi na Windows, Android i iPhone browseru; *internet je potreban za slušanje*.
+
+## Preuzimanje i instalacija
+
+- **Windows 10/11**: otvori [Releases](https://github.com/acealeksa1234-a11y/EX-YU-Radio-Web/releases/latest), preuzmi **EX-YU-Radio-Setup.exe**, pokreni ga i klikni Next/Install. Posle instalacije aplikacija postoji u Start meniju.
+- **Android**: na istom linku preuzmi **EX-YU-Radio-Android.apk**, otvori preuzeti fajl i potvrdi Android zahtev za instalaciju. Ako Android pita, dozvoli instalaciju iz browsera. Ovo je probna APK verzija potpisana debug ključem; sledeća APK verzija može zahtevati uklanjanje prethodne.
+- **iPhone / iPad**: na iOS-u nije moguća direktna instalacija nepotpisanog IPA fajla. Otvori [EX-YU Radio](https://acealeksa1234-a11y.github.io/EX-YU-Radio-Web/) u **Safariju**, pritisni **Share → Add to Home Screen**, uključi **Open as Web App** i potvrdi **Add**. Dobijaš ikonicu, bez Apple Developer naloga.
+- **Ažuriranja**: sve tri verzije učitavaju novi sadržaj sa iste GitHub Pages adrese. Za promene samog Windows/Android omotača biće potreban novi instalacioni paket.
+
+Windows i Android instalacione pakete gradi GitHub Actions preko [build-installers.yml](.github/workflows/build-installers.yml) i postavlja ih kao Release datoteke. Installeri se mogu koristiti tek kada workflow uspe i kad su datoteke zaista objavljene.
+
+Napomena: ovi instalacioni paketi **nisu CarPlay niti Android Auto aplikacije**. Služe za rad na telefonu i Windows računaru. Radio radi uz internet.
 
 ## GitHub Pages — besplatno objavljivanje
 
@@ -32,10 +43,10 @@ Ovaj projekat je zasebna PWA verzija postojeće EX-YU Radio aplikacije. Ne menja
 
 Ako stranica ne radi odmah nakon uključivanja Pages, sačekaj GitHub da je prvi put objavi pa osveži stranicu.
 
-## Šta nije moguće preko PWA
+## Ograničenja
 
-- Ovo nije iPhone `.ipa` ni Android `.apk` fajl.
-- Ne pojavljuje se kao posebna aplikacija u Apple CarPlay/Android Auto meniju.
+- iPhone koristi Safari web-aplikaciju, ne `.ipa` fajl. Android i Windows imaju zasebne instalacione omotače.
+- Ova verzija se ne pojavljuje kao posebna aplikacija u Apple CarPlay/Android Auto meniju.
 - Radio stream može biti nedostupan, ili browser može odbiti starije `http://` streamove na sigurnoj `https://` adresi.
 - Podaci se čuvaju lokalno u tom browseru/PWA instalaciji. Za prenos koristi **Podešavanja → Sačuvaj**, zatim **Vrati** na drugom uređaju.
 

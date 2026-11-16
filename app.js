@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const STORAGE_KEY = 'exyu-radio-pwa-v1';
   const CATALOG_KEY = 'exyu-radio-catalog-v2';
-  const APP_VERSION = 3;
+  const APP_VERSION = 4;
   const THEMES = new Set(['neon', 'midnight', 'gold', 'ocean', 'sunset', 'forest', 'light']);
   const COUNTRIES = [
     {code:'MK',name:'Makedonija',icon:'🇲🇰'},
@@ -416,6 +416,8 @@
   }
 
   function installURL() { return new URL('./', window.location.href).href; }
+  function isIOS() { return /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isInstalled() { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
   function updateInstall() {
     const url = installURL();
     $('appLink').value = url;
@@ -423,7 +425,10 @@
     $('qrFallback').hidden = true; qr.hidden = false;
     qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(url);
     qr.onerror = () => { qr.hidden = true; $('qrFallback').hidden = false; };
-    $('nativeInstallBtn').hidden = !state.deferredInstall;
+    const btn = $('nativeInstallBtn');
+    btn.hidden = !!isInstalled();
+    btn.disabled = false;
+    btn.textContent = state.deferredInstall ? 'Instaliraj aplikaciju' : isIOS() ? 'Pokaži korake za iPhone' : 'Kako da instaliram?';
   }
   async function copyAppLink() {
     try { await navigator.clipboard.writeText(installURL()); toast('Link kopiran!'); }
@@ -431,7 +436,17 @@
   }
   async function installNative() {
     const prompt = state.deferredInstall;
-    if (!prompt) return;
+    if (!prompt) {
+      const guide = document.querySelector(isIOS() ? '.install-instructions>div:first-child' : '.install-instructions>div:last-child');
+      if (guide) {
+        guide.classList.remove('guide-highlight');
+        void guide.offsetWidth;
+        guide.classList.add('guide-highlight');
+        guide.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      toast(isIOS() ? 'iPhone: Safari → Deli (Share) → Dodaj na početni ekran. Apple ne podržava direktno Install dugme.' : 'Chrome: meni ⋮ → Instaliraj aplikaciju. Ako nema te opcije, izaberi Dodaj na početni ekran.');
+      return;
+    }
     prompt.prompt();
     try { await prompt.userChoice; } catch { /* Browser may close the prompt. */ }
     state.deferredInstall = null;
@@ -531,7 +546,7 @@
     $('miniStationOpen').addEventListener('click',() => openDialog('playingDialog'));
     $('miniArt').addEventListener('click',() => openDialog('playingDialog'));
     $('qrImage').addEventListener('error',() => { $('qrImage').hidden=true; $('qrFallback').hidden=false; });
-    window.addEventListener('beforeinstallprompt',event => { event.preventDefault(); state.deferredInstall=event; $('nativeInstallBtn').hidden=false; });
+    window.addEventListener('beforeinstallprompt',event => { event.preventDefault(); state.deferredInstall=event; updateInstall(); });
     window.addEventListener('appinstalled', () => { state.deferredInstall=null; toast('EX-YU Radio je instaliran!'); });
     audio.addEventListener('playing', () => { state.playing=true; if (state.current) state.failedStations.delete(state.current.stationuuid); setPlayStatus('🔊 Slušaš uživo');updatePlayer();renderStations(); });
     audio.addEventListener('pause', () => { state.playing=false; if (state.current) setPlayStatus('Pauzirano · pritisni ▶');updatePlayer(); });

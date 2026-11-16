@@ -1,0 +1,90 @@
+name: Build Windows and Android installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'native/**'
+      - '.github/workflows/build-installers.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows Setup.exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish desktop application
+        run: dotnet publish native/windows/EXYURadio.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o build/windows
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Create Setup.exe
+        shell: cmd
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" native\windows\installer.iss'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-windows
+          path: build/release/EX-YU-Radio-Setup.exe
+          if-no-files-found: error
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Add EX-YU Radio app icon
+        run: |
+          mkdir -p native/android/app/src/main/res/drawable-nodpi
+          cp assets/icon-192.png native/android/app/src/main/res/drawable-nodpi/ic_launcher.png
+      - name: Build signed debug APK
+        working-directory: native/android
+        run: gradle assembleDebug --no-daemon --stacktrace
+      - name: Prepare download name
+        run: cp native/android/app/build/outputs/apk/debug/app-debug.apk EX-YU-Radio-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-android
+          path: EX-YU-Radio-Android.apk
+          if-no-files-found: error
+
+  release:
+    name: Publish permanent download links
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          merge-multiple: true
+          path: downloads
+      - name: Check both installers
+        run: test -s downloads/EX-YU-Radio-Setup.exe && test -s downloads/EX-YU-Radio-Android.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: installers-v1
+          name: EX-YU Radio — Windows i Android instalacija
+          body: |
+            EX-YU Radio — Developed by Aleksandar Aleksovski.
+
+            Windows: preuzmite Setup.exe i pokrenite instalaciju.
+            Android: preuzmite APK i potvrdite instalaciju (dozvolite instalaciju iz browsera ako Android pita).
+            iPhone: otvorite GitHub Pages web-aplikaciju u Safariju i izaberite Share → Add to Home Screen.
+
+            Ova Android APK verzija nije Android Auto aplikacija; iPhone web-verzija nije Apple CarPlay aplikacija.
+            Android APK je za sada testna verzija potpisana debug ključem. Nova APK verzija će možda zahtevati uklanjanje stare pre ponovne instalacije.
+          files: downloads/*
+          make_latest: true
+          overwrite_files: true
