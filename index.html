@@ -12,7 +12,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/icon-192.png">
   <link rel="apple-touch-icon" href="./assets/icon-192.png">
-  <link rel="stylesheet" href="./styles.css?v=6">
+  <link rel="stylesheet" href="./styles.css?v=7">
   <title>EX-YU Radio · Aleksandar Aleksovski</title>
 </head>
 <body data-theme="neon">
@@ -69,7 +69,7 @@
       <section class="welcome"><div class="welcome-copy"><div class="overline">MUZIKA BEZ GRANICA</div><h1>Tvoj radio.<br><em>Tvoja muzika.</em></h1><p>Od Skoplja i Beograda do Sarajeva, Zagreba, Ljubljane, Podgorice i Berlina.</p><div class="welcome-actions"><button class="btn primary" id="surpriseBtn"><svg><use href="#i-play"/></svg> Pusti nešto dobro</button><button class="btn soft" id="addStationBtn"><svg><use href="#i-plus"/></svg> Dodaj stanicu</button></div></div><div class="welcome-illustration"><div class="halo halo-one"></div><div class="halo halo-two"></div><img src="./assets/icon-512.png" alt="EX-YU Radio"/><span class="hero-tag">♪ UVEK UZ TEBE</span></div></section>
       <section class="library-head"><div><div class="overline accent-overline">OTKRIJ MUZIKU</div><h2 id="viewHeading">Sve radio-stanice <span class="h2-count" id="headCount">...</span></h2></div><button id="refreshBtn" class="icon-text-btn" title="Osveži katalog"><svg><use href="#i-refresh"/></svg><span>Osveži</span></button></section>
       <div class="filter-row"><div class="search-select-row"><label class="searchbox"><svg><use href="#i-search"/></svg><input id="searchInput" type="search" placeholder="Pretraži naziv, grad ili žanr..." autocomplete="off" aria-label="Pretraži radio-stanice"></label><label class="country-select"><span>🌐</span><select id="countrySelect" aria-label="Izaberi zemlju"><option value="all">Sve države</option><option value="yu">Sve EX-YU</option><option value="MK">🇲🇰 Makedonija</option><option value="RS">🇷🇸 Srbija</option><option value="BA">🇧🇦 BiH</option><option value="HR">🇭🇷 Hrvatska</option><option value="ME">🇲🇪 Crna Gora</option><option value="SI">🇸🇮 Slovenija</option><option value="DE">🇩🇪 Nemačka</option><option value="favorites">♡ Omiljene</option><option value="recent">◷ Nedavno</option><option value="custom">+ Moje</option></select></label></div><div class="chips" id="chips"><button data-view="all" class="chip active">Sve</button><button data-view="yu" class="chip">🌍 EX-YU</button><button data-view="MK" class="chip">🇲🇰 MK</button><button data-view="RS" class="chip">🇷🇸 RS</button><button data-view="BA" class="chip">🇧🇦 BiH</button><button data-view="HR" class="chip">🇭🇷 HR</button><button data-view="ME" class="chip">🇲🇪 CG</button><button data-view="SI" class="chip">🇸🇮 SI</button><button data-view="DE" class="chip">🇩🇪 DE</button><button data-view="favorites" class="chip">♡ Omiljene</button><button data-view="recent" class="chip">Nedavno</button><button data-view="custom" class="chip">Moje</button></div></div>
-      <div class="status-row"><p id="catalogStatus">Učitavamo radio-stanice...</p><div class="live-and-visitors"><span class="online-label"><i></i> LIVE RADIO</span><span class="visitor-chip" title="Broj poseta aplikaciji, ne broj ljudi koji trenutno slušaju" aria-label="Broj poseta aplikaciji">👥 Posete <strong id="visitorCount">—</strong></span></div></div>
+      <div class="status-row"><p id="catalogStatus">Učitavamo radio-stanice...</p><div class="live-and-visitors"><span class="online-label"><i></i> LIVE RADIO</span><span class="visitor-chip" title="Približan broj ljudi sa otvorenom aplikacijom, ne broj slušalaca" aria-label="Ljudi trenutno online">👥 Online <span class="live-users-widget"><script id="_wau___">var _wau = _wau || []; _wau.push(["small", "exyu26a04b", "___"]);</script><script async src="https://waust.at/s.js"></script></span></span></div></div>
       <div class="catalog-note" id="catalogNote" hidden></div>
       <div class="station-list" id="stationList" aria-live="polite"><div class="empty-state loading-state"><span class="loader"></span><strong>Tražimo tvoje stanice...</strong><p>Sačekaj trenutak.</p></div></div>
       <button id="loadMoreBtn" class="load-more" hidden>Prikaži još stanica</button>
@@ -125,6 +125,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <audio id="audio" preload="none"></audio>
-  <script src="./app.js?v=6" defer></script>
+  <script src="./app.js?v=7" defer></script>
 </body>
 </html>
