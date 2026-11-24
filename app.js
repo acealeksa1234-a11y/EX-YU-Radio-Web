@@ -4,7 +4,9 @@
   const $ = id => document.getElementById(id);
   const STORAGE_KEY = 'exyu-radio-pwa-v1';
   const CATALOG_KEY = 'exyu-radio-catalog-v2';
-  const APP_VERSION = 5;
+  const VISIT_DAY_KEY = 'exyu-radio-visit-day-v1';
+  const VISIT_COUNTER = 'exyu_radio_acealeksa1234_a11y_visits_v1';
+  const APP_VERSION = 6;
   const THEMES = new Set(['neon', 'midnight', 'gold', 'ocean', 'sunset', 'forest', 'light']);
   const COUNTRIES = [
     {code:'MK',name:'Makedonija',icon:'🇲🇰'},
@@ -23,7 +25,7 @@
   const PAGE_SIZE = 60;
   const DEFAULT_SETTINGS = {theme:'neon', volume:65, rememberLast:true, lastStationID:null, favorites:[], recent:[], custom:[]};
   const audio = $('audio');
-  const state = {view:'all', query:'', page:1, catalog:[], custom:[], favorites:new Set(), recent:[], current:null, playing:false, loading:false, loaded:false, countryErrors:[], fetchedCountries:0, failedStations:new Set(), currentError:'', logoError:new Set(), settings:{...DEFAULT_SETTINGS}, deferredInstall:null, toastTimer:null, streamFallbackTried:false, updateAvailable:false, updateChecking:false, lastUpdateCheck:0};
+  const state = {view:'all', query:'', page:1, catalog:[], custom:[], favorites:new Set(), recent:[], current:null, playing:false, loading:false, loaded:false, countryErrors:[], fetchedCountries:0, failedStations:new Set(), currentError:'', logoError:new Set(), settings:{...DEFAULT_SETTINGS}, deferredInstall:null, toastTimer:null, streamFallbackTried:false, updateAvailable:false, updateChecking:false, lastUpdateCheck:0, userPaused:true, reconnectTimer:null, stallTimer:null, reconnectAttempts:0, reconnectBlocked:false, reconnecting:false, streamSeq:0};
 
   function safeGet(key) { try { return localStorage.getItem(key); } catch { return null; } }
   function safeSet(key, value) { try { localStorage.setItem(key, value); return true; } catch { return false; } }
@@ -180,6 +182,110 @@
     $('sheetStatus').textContent = message;
     $('miniMeta').textContent = message;
   }
+
+  function clearRecoveryTimers() {
+    clearTimeout(state.reconnectTimer);
+    clearTimeout(state.stallTimer);
+    state.reconnectTimer = null;
+    state.stallTimer = null;
+  }
+  function needsTapToResume() {
+    clearRecoveryTimers();
+    state.reconnectBlocked = true;
+    state.reconnecting = false;
+    state.playing = false;
+    setPlayStatus('iPhone traži da pritisneš ▶ za nastavak', true);
+    updatePlayer();
+  }
+  function planRecovery(reason, delayOverride) {
+    if (!state.current || state.userPaused || state.reconnectBlocked) return;
+    clearTimeout(state.stallTimer);
+    state.stallTimer = null;
+    if (!navigator.onLine) {
+      setPlayStatus('Nema interneta · nastavljamo kada se veza vrati');
+      return;
+    }
+    if (state.reconnectTimer) return;
+    if (state.reconnectAttempts >= 8) {
+      state.reconnecting = false;
+      state.failedStations.add(state.current.stationuuid);
+      setPlayStatus('Nije uspelo povezivanje · pritisni ▶ za novi pokušaj', true);
+      updatePlayer();
+      renderStations();
+      return;
+    }
+    const wait = Number.isFinite(delayOverride) ? Math.max(0, delayOverride) : Math.min(30000, 1500 * (2 ** state.reconnectAttempts));
+    const attempt = state.reconnectAttempts + 1;
+    const stationId = state.current.stationuuid;
+    state.reconnecting = true;
+    setPlayStatus(wait ? 'Veza prekinuta · pokušaj ' + attempt + '/8 za ' + Math.ceil(wait / 1000) + ' s' : 'Veza se vratila · povezujemo radio...');
+    state.reconnectTimer = setTimeout(() => {
+      state.reconnectTimer = null;
+      if (state.current && state.current.stationuuid === stationId) void recoverStream();
+    }, wait);
+  }
+  async function recoverStream() {
+    if (!state.current || state.userPaused || state.reconnectBlocked) return;
+    if (!navigator.onLine) {
+      setPlayStatus('Nema interneta · nastavljamo kada se veza vrati');
+      return;
+    }
+    const station = state.current;
+    const stream = safeURL((state.streamFallbackTried ? station.url : station.url_resolved) || station.url);
+    if (!stream) {
+      state.reconnectBlocked = true;
+      setPlayStatus('Neispravna adresa radio-stanice', true);
+      return;
+    }
+    const seq = ++state.streamSeq;
+    state.reconnectAttempts++;
+    state.reconnecting = true;
+    state.playing = false;
+    audio.pause();
+    audio.src = stream;
+    audio.load();
+    setPlayStatus('Ponovno povezivanje (' + state.reconnectAttempts + '/8)...');
+    updatePlayer();
+    try {
+      await audio.play();
+      // Tek događaj "playing" potvrđuje da je nastavljen zvuk.
+    } catch (error) {
+      if (seq !== state.streamSeq || state.userPaused) return;
+      if (error && error.name === 'NotAllowedError') { needsTapToResume(); return; }
+      planRecovery('Ponovni pokušaj nije uspeo');
+    }
+  }
+  function watchStall() {
+    if (!state.current || state.userPaused || state.reconnectBlocked || state.reconnectTimer || state.stallTimer) return;
+    const seq = state.streamSeq;
+    state.stallTimer = setTimeout(() => {
+      state.stallTimer = null;
+      if (seq === state.streamSeq && !state.userPaused && !state.reconnectBlocked) {
+        planRecovery('Zvuk se zaustavio');
+      }
+    }, 16000);
+  }
+  async function showVisitorCount() {
+    const display = $('visitorCount');
+    if (!display) return;
+    const day = new Date().toISOString().slice(0, 10);
+    const alreadyCounted = safeGet(VISIT_DAY_KEY) === day;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7000);
+    try {
+      const operation = alreadyCounted ? 'get' : 'hit';
+      const endpoint = 'https://countapi.mileshilliard.com/api/v1/' + operation + '/' + VISIT_COUNTER;
+      const response = await fetch(endpoint, {cache:'no-store', credentials:'omit', referrerPolicy:'no-referrer', signal:controller.signal});
+      if (!response.ok) throw new Error('Counter HTTP ' + response.status);
+      const value = Number((await response.json()).value);
+      if (!Number.isSafeInteger(value) || value < 0) throw new Error('Counter unavailable');
+      display.textContent = value.toLocaleString('sr-RS');
+      if (!alreadyCounted) safeSet(VISIT_DAY_KEY, day);
+    } catch {
+      display.textContent = '—'; // Ne prikazuj izmišljen broj kada servis nije dostupan.
+    } finally { clearTimeout(timeout); }
+  }
+
   function playerArtwork(s, fallbackImg) {
     const url = s && !state.logoError.has(s.stationuuid) ? safeLogo(s.favicon) : '';
     return url || fallbackImg;
@@ -222,12 +328,19 @@
     state.recent = [id, ...state.recent.filter(x => x !== id)].slice(0, 80);
     persist();
   }
+
   async function startStation(s) {
     if (!s) { toast('Prvo izaberi radio-stanicu.'); return; }
     const stream = safeURL(s.url_resolved || s.url);
     if (!stream) { toast('Neispravan link do streama.'); return; }
+    clearRecoveryTimers();
     state.current = s;
+    state.userPaused = false;
+    state.reconnectBlocked = false;
+    state.reconnecting = false;
+    state.reconnectAttempts = 0;
     state.streamFallbackTried = false;
+    const seq = ++state.streamSeq;
     state.failedStations.delete(s.stationuuid);
     state.settings.lastStationID = state.settings.rememberLast ? s.stationuuid : null;
     persist();
@@ -240,16 +353,23 @@
     renderStations();
     try {
       await audio.play();
-      // The 'playing' event will update status when bytes actually arrive.
-      recordPlay(s.stationuuid);
+      if (seq === state.streamSeq) recordPlay(s.stationuuid);
     } catch (error) {
-      state.playing = false;
-      state.failedStations.add(s.stationuuid);
-      setPlayStatus('Nema zvuka · pokušaj drugi stream ili stanicu', true);
-      updatePlayer();
-      renderStations();
-      toast('Ovaj stream trenutno ne može da se pusti.');
+      if (seq !== state.streamSeq || state.userPaused) return;
+      if (error && error.name === 'NotAllowedError') { needsTapToResume(); return; }
+      planRecovery('Stanica trenutno ne odgovara');
     }
+  }
+
+  function pauseByUser() {
+    state.userPaused = true;
+    state.reconnecting = false;
+    state.reconnectBlocked = false;
+    clearRecoveryTimers();
+    audio.pause();
+    state.playing = false;
+    if (state.current) setPlayStatus('Pauzirano · pritisni ▶');
+    updatePlayer();
   }
   async function togglePlayer() {
     if (!state.current) {
@@ -257,9 +377,22 @@
       if (s) await startStation(s); else toast('Nema učitanih stanica.');
       return;
     }
-    if (!audio.paused) { audio.pause(); return; }
-    try { await audio.play(); } catch { setPlayStatus('Stream trenutno nije dostupan', true); toast('Pokušaj drugu stanicu.'); }
+    if (!audio.paused && state.playing) { pauseByUser(); return; }
+    clearRecoveryTimers();
+    state.userPaused = false;
+    state.reconnectBlocked = false;
+    state.reconnecting = false;
+    state.reconnectAttempts = 0;
+    const seq = ++state.streamSeq;
+    try {
+      await audio.play();
+    } catch (error) {
+      if (seq !== state.streamSeq || state.userPaused) return;
+      if (error && error.name === 'NotAllowedError') { needsTapToResume(); return; }
+      planRecovery('Ponovno pokretanje');
+    }
   }
+
   function skip(direction) {
     let list = visibleStations();
     if (!list.length || (state.current && !list.some(s => s.stationuuid === state.current.stationuuid))) {
@@ -550,30 +683,78 @@
     $('qrImage').addEventListener('error',() => { $('qrImage').hidden=true; $('qrFallback').hidden=false; });
     window.addEventListener('beforeinstallprompt',event => { event.preventDefault(); state.deferredInstall=event; updateInstall(); });
     window.addEventListener('appinstalled', () => { state.deferredInstall=null; toast('EX-YU Radio je instaliran!'); });
-    audio.addEventListener('playing', () => { state.playing=true; if (state.current) state.failedStations.delete(state.current.stationuuid); setPlayStatus('🔊 Slušaš uživo');updatePlayer();renderStations(); });
-    audio.addEventListener('pause', () => { state.playing=false; if (state.current) setPlayStatus('Pauzirano · pritisni ▶');updatePlayer(); });
-    audio.addEventListener('waiting', () => { if (state.current) setPlayStatus('Učitavanje zvuka...'); });
-    audio.addEventListener('stalled', () => { if (state.current) setPlayStatus('Sporo učitavanje streama...'); });
+
+    audio.addEventListener('playing', () => {
+      clearRecoveryTimers();
+      state.reconnecting = false;
+      state.reconnectAttempts = 0;
+      if (state.userPaused) { audio.pause(); return; }
+      state.playing = true;
+      if (state.current) state.failedStations.delete(state.current.stationuuid);
+      setPlayStatus('🔊 Slušaš uživo');
+      updatePlayer();
+      renderStations();
+    });
+    audio.addEventListener('pause', () => {
+      state.playing = false;
+      if (state.current && state.userPaused) setPlayStatus('Pauzirano · pritisni ▶');
+      updatePlayer();
+    });
+    audio.addEventListener('waiting', watchStall);
+    audio.addEventListener('stalled', watchStall);
     audio.addEventListener('error', () => {
-      if (!state.current) return;
+      if (!state.current || state.userPaused || state.reconnectBlocked) return;
       const fallback = safeURL(state.current.url);
       if (!state.streamFallbackTried && fallback && fallback !== audio.src) {
-        state.streamFallbackTried=true;audio.src=fallback;audio.load();audio.play().catch(() => {});return;
+        state.streamFallbackTried = true;
+        clearRecoveryTimers();
+        const seq = ++state.streamSeq;
+        audio.src = fallback;
+        audio.load();
+        setPlayStatus('Pokušavamo rezervni stream...');
+        audio.play().catch(error => {
+          if (seq !== state.streamSeq || state.userPaused) return;
+          if (error && error.name === 'NotAllowedError') needsTapToResume();
+          else planRecovery('Rezervni stream nije dostupan');
+        });
+        return;
       }
-      state.playing=false;if (state.current) state.failedStations.add(state.current.stationuuid);setPlayStatus('Stream nije dostupan ili format nije podržan',true);updatePlayer();renderStations();
+      state.playing = false;
+      updatePlayer();
+      planRecovery('Stream je prekinut');
     });
-    audio.addEventListener('ended', () => { state.playing=false;setPlayStatus('Emitovanje je prekinuto. Pokušaj ponovo.',true);updatePlayer(); });
+    audio.addEventListener('ended', () => {
+      if (!state.current || state.userPaused) return;
+      state.playing = false;
+      updatePlayer();
+      planRecovery('Emitovanje je prekinuto');
+    });
+    window.addEventListener('offline', () => {
+      if (!state.current || state.userPaused) return;
+      clearRecoveryTimers();
+      state.playing = false;
+      setPlayStatus('Nema interneta · čeka se povratak veze');
+      updatePlayer();
+    });
+    window.addEventListener('online', () => {
+      if (!state.current || state.userPaused || state.reconnectBlocked) return;
+      clearRecoveryTimers();
+      state.reconnectAttempts = 0;
+      planRecovery('Internet se vratio', 250);
+    });
+
     if ('mediaSession' in navigator) {
-      for (const [name,fn] of Object.entries({play:() => togglePlayer(),pause:() => audio.pause(),previoustrack:() => skip(-1),nexttrack:() => skip(1),stop:() => {audio.pause();audio.currentTime=0;}})) {
+      for (const [name,fn] of Object.entries({play:() => togglePlayer(),pause:() => pauseByUser(),previoustrack:() => skip(-1),nexttrack:() => skip(1),stop:() => {pauseByUser();try{audio.currentTime=0;}catch{}}})) {
         try { navigator.mediaSession.setActionHandler(name,fn); } catch { /* Not supported. */ }
       }
     }
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
     }
-    window.addEventListener('load', () => setTimeout(() => checkForUpdates(), 1200));
+    window.addEventListener('load', () => { setTimeout(() => checkForUpdates(), 1200); void showVisitorCount(); });
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && Date.now() - state.lastUpdateCheck > 10 * 60 * 1000) checkForUpdates();
+      if (!document.hidden && state.current && !state.userPaused && !state.reconnectBlocked && !state.playing && !state.reconnectTimer) planRecovery('Povratak u aplikaciju', 700);
     });
     setInterval(() => { if (!document.hidden) checkForUpdates(); }, 20 * 60 * 1000);
   }
