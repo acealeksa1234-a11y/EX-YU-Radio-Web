@@ -4,9 +4,7 @@
   const $ = id => document.getElementById(id);
   const STORAGE_KEY = 'exyu-radio-pwa-v1';
   const CATALOG_KEY = 'exyu-radio-catalog-v2';
-  const VISIT_DAY_KEY = 'exyu-radio-visit-day-v1';
-  const VISIT_COUNTER = 'exyu_radio_acealeksa1234_a11y_visits_v1';
-  const APP_VERSION = 6;
+  const APP_VERSION = 7;
   const THEMES = new Set(['neon', 'midnight', 'gold', 'ocean', 'sunset', 'forest', 'light']);
   const COUNTRIES = [
     {code:'MK',name:'Makedonija',icon:'🇲🇰'},
@@ -265,27 +263,6 @@
       }
     }, 16000);
   }
-  async function showVisitorCount() {
-    const display = $('visitorCount');
-    if (!display) return;
-    const day = new Date().toISOString().slice(0, 10);
-    const alreadyCounted = safeGet(VISIT_DAY_KEY) === day;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7000);
-    try {
-      const operation = alreadyCounted ? 'get' : 'hit';
-      const endpoint = 'https://countapi.mileshilliard.com/api/v1/' + operation + '/' + VISIT_COUNTER;
-      const response = await fetch(endpoint, {cache:'no-store', credentials:'omit', referrerPolicy:'no-referrer', signal:controller.signal});
-      if (!response.ok) throw new Error('Counter HTTP ' + response.status);
-      const value = Number((await response.json()).value);
-      if (!Number.isSafeInteger(value) || value < 0) throw new Error('Counter unavailable');
-      display.textContent = value.toLocaleString('sr-RS');
-      if (!alreadyCounted) safeSet(VISIT_DAY_KEY, day);
-    } catch {
-      display.textContent = '—'; // Ne prikazuj izmišljen broj kada servis nije dostupan.
-    } finally { clearTimeout(timeout); }
-  }
-
   function playerArtwork(s, fallbackImg) {
     const url = s && !state.logoError.has(s.stationuuid) ? safeLogo(s.favicon) : '';
     return url || fallbackImg;
@@ -751,7 +728,7 @@
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
     }
-    window.addEventListener('load', () => { setTimeout(() => checkForUpdates(), 1200); void showVisitorCount(); });
+    window.addEventListener('load', () => setTimeout(() => checkForUpdates(), 1200));
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && Date.now() - state.lastUpdateCheck > 10 * 60 * 1000) checkForUpdates();
       if (!document.hidden && state.current && !state.userPaused && !state.reconnectBlocked && !state.playing && !state.reconnectTimer) planRecovery('Povratak u aplikaciju', 700);
