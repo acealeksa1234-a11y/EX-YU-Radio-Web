@@ -46,10 +46,10 @@ jobs:
           import json
           d=json.load(open('probe-read.json',encoding='utf-8'))
           print('Read-only active visitors:',d.get('value'))
-          print('Test read did not yet match if zero; checking aggregation below.')
+          print('The aggregation may need a few seconds to be updated.')
           PY
           echo 'Query combinations after heartbeat:'
-          sleep 5
+          sleep 6
           for query in '?readOnly=true' '?readOnly=true&timeline=2m' '?readOnly=true&timeline=5m' '?readOnly=true&unique=true' '?readOnly=true&timeline=2m&unique=true' '?readOnly=true&timeline=5m&unique=true'; do
             echo "  mode $query"
             curl -sS -L --max-time 15 "https://counterapi.com/api/exyu-radio-aleksovski-2026/online/exyu-smoke-test$query" | python3 -c 'import json,sys; d=json.load(sys.stdin);print("value",d.get("value"))'

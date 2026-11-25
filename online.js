@@ -32,15 +32,20 @@
     lastRefresh = Date.now();
     if (refreshButton) refreshButton.disabled = true;
     const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 8500);
+    const timeout = setTimeout(() => ctrl.abort(), 15000);
     try {
-      // This records the viewer's presence and returns unique visitors in the last 2m.
-      const url = BASE + '?timeline=2m&unique=true';
+      // CounterAPI writes events immediately but updates unique/timeline
+      // aggregations with a short delay. A single write response is NOT
+      // the real-time unique user count; always read the aggregation separately.
+      const trackResponse = await fetch(BASE, {method:'GET',mode:'cors',cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:ctrl.signal});
+      if (!trackResponse.ok) throw new Error('Counter heartbeat HTTP ' + trackResponse.status);
+      await new Promise(resolve => setTimeout(resolve, 5500));
+      const url = BASE + '?readOnly=true&timeline=2m&unique=true';
       const response = await fetch(url, {method:'GET',mode:'cors',cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:ctrl.signal});
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      const data = await response.json();
-      const value = Number(data?.value);
-      if (!Number.isSafeInteger(value) || value < 0) throw new Error('Invalid count');
+      if (!response.ok) throw new Error('Counter read HTTP ' + response.status);
+      const body = await response.json();
+      const value = Number(body?.value);
+      if (!Number.isSafeInteger(value) || value < 0) throw new Error('Invalid counter value');
       show(value.toLocaleString('sr-RS'), 'Korisnici aktivni u poslednja 2 minuta', true);
     } catch (_) {
       show('—', 'Brojač trenutno nije dostupan', false);

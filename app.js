@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const STORAGE_KEY = 'exyu-radio-pwa-v1';
   const CATALOG_KEY = 'exyu-radio-catalog-v2';
-  const APP_VERSION = 8;
+  const APP_VERSION = 9;
   const THEMES = new Set(['neon', 'midnight', 'gold', 'ocean', 'sunset', 'forest', 'light']);
   const COUNTRIES = [
     {code:'MK',name:'Makedonija',icon:'🇲🇰'},
