@@ -3,54 +3,34 @@ on:
   push:
     paths:
       - '.github/workflows/verify-online-service.yml'
+      - 'online.js'
   workflow_dispatch:
 jobs:
-  check-counter-api:
+  check-online:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify CounterAPI response, JSON and browser CORS
-        shell: bash
+      - uses: actions/checkout@v4
+      - name: Check JavaScript and live HTTP API
+        env:
+          URL: https://jjgkvncuixqmcyugcblj.supabase.co/functions/v1/radio-online
+          ANON: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2t2bmN1aXhxbWN5dWdjYmxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2MjQ0NDQsImV4cCI6MjExMTIwMDQ0NH0.DOOOmJ_27zMLwds_JjV8jvXaRMgizjKARnIRlwYoM2w
         run: |
           set -euo pipefail
-          code=$(curl -sS -L --connect-timeout 10 --max-time 25 -D headers.txt -o body.json -w '%{http_code}'             -H 'Origin: https://acealeksa1234-a11y.github.io'             'https://counterapi.com/api/exyu-radio-aleksovski-2026/online/active?readOnly=true&timeline=2m&unique=true')
-          echo "HTTP status: $code"
-          head -c 1500 body.json; echo
-          echo "CORS headers:"
-          grep -i -E '^access-control-(allow-origin|allow-credentials)' headers.txt || true
-          test "$code" = 200
+          node --check online.js
+          node --check app.js
+          node --check sw.js
           python3 - <<'PY'
-          import json
-          with open('body.json', encoding='utf-8') as f:
-              response = json.load(f)
-          if not isinstance(response, dict) or not isinstance(response.get('value'), (int,float)):
-              raise SystemExit('Invalid JSON response: expected numeric value')
-          print('JSON response value:', response['value'])
+          import json, urllib.request, os, uuid
+          def call(sid):
+              req=urllib.request.Request(os.environ['URL'],data=json.dumps({'session_id':sid}).encode(),headers={'Authorization':'Bearer '+os.environ['ANON'],'apikey':os.environ['ANON'],'Origin':'https://acealeksa1234-a11y.github.io','Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=25) as r:
+                  assert r.headers.get('Access-Control-Allow-Origin')=='https://acealeksa1234-a11y.github.io'
+                  n=json.load(r)['online']
+                  assert isinstance(n,int) and n>=0
+                  return n
+          base=call(None)
+          a,b=str(uuid.uuid4()),str(uuid.uuid4())
+          one,two,repeat,read=call(a),call(b),call(a),call(None)
+          print('Counts:',base,one,two,repeat,read)
+          assert one==base+1 and two==base+2 and repeat==two and read==two
           PY
-          grep -iq '^access-control-allow-origin:' headers.txt
-          # Exercise a separate test counter to avoid inflating the real online number.
-          probe='https://counterapi.com/api/exyu-radio-aleksovski-2026/online/exyu-smoke-test?timeline=2m&unique=true'
-          echo 'Send one heartbeat to test counter...'
-          write_code=$(curl -sS -L --max-time 25 -o probe.json -w '%{http_code}' -H 'Origin: https://acealeksa1234-a11y.github.io' "$probe")
-          test "$write_code" = 200
-          python3 - <<'PY'
-          import json
-          d=json.load(open('probe.json',encoding='utf-8'))
-          print('Heartbeat count:',d)
-          assert isinstance(d.get('value'),(int,float)), 'Heartbeat response missing value'
-          assert d['value'] >= 1, 'Heartbeat did not register an active visitor'
-          PY
-          echo 'Confirm read-only unique timeline count...'
-          read_code=$(curl -sS -L --max-time 25 -o probe-read.json -w '%{http_code}' -H 'Origin: https://acealeksa1234-a11y.github.io' "$probe&readOnly=true")
-          test "$read_code" = 200
-          python3 - <<'PY'
-          import json
-          d=json.load(open('probe-read.json',encoding='utf-8'))
-          print('Read-only active visitors:',d.get('value'))
-          print('The aggregation may need a few seconds to be updated.')
-          PY
-          echo 'Query combinations after heartbeat:'
-          sleep 6
-          for query in '?readOnly=true' '?readOnly=true&timeline=2m' '?readOnly=true&timeline=5m' '?readOnly=true&unique=true' '?readOnly=true&timeline=2m&unique=true' '?readOnly=true&timeline=5m&unique=true'; do
-            echo "  mode $query"
-            curl -sS -L --max-time 15 "https://counterapi.com/api/exyu-radio-aleksovski-2026/online/exyu-smoke-test$query" | python3 -c 'import json,sys; d=json.load(sys.stdin);print("value",d.get("value"))'
-          done

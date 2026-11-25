@@ -59,3 +59,7 @@ Lista stanica koristi [Radio Browser API](https://docs.radio-browser.info/) sa s
 Radio Browser izdvaja stanice koje su pale na njegovim automatizovanim proverama (`hidebroken=true`).
 To **nije garancija** da će svaki stream trenutno raditi na svakom telefonu: radio može prestati da emituje, imati nekompatibilan format ili koristiti HTTP stream blokiran na HTTPS stranici.
 Aplikacija označava stanicu koja nije uspela da se pokrene; pokušaj ponovo ili izaberi drugu.
+
+## V10 — statistika online
+
+Besplatan Supabase projekat (Frankfurt); broj aktivnih anonimnih instalacija/profila browsera, ne IP adresa. Heartbeat 60 sekundi, istek 3 minuta. Stranica statistike samo čita broj. Ako server ne radi, prikazuje se crtica; audio nije zavisan od statistike. Ne prelaziti na plaćeni paket bez odobrenja. Pozadinski režim iOS-a može obustaviti heartbeat.
