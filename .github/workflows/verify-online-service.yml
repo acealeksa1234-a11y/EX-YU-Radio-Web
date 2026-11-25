@@ -52,6 +52,5 @@ jobs:
           sleep 5
           for query in '?readOnly=true' '?readOnly=true&timeline=2m' '?readOnly=true&timeline=5m' '?readOnly=true&unique=true' '?readOnly=true&timeline=2m&unique=true' '?readOnly=true&timeline=5m&unique=true'; do
             echo "  mode $query"
-            curl -sS -L --max-time 15 "$probe".none >/dev/null 2>&1 || true
             curl -sS -L --max-time 15 "https://counterapi.com/api/exyu-radio-aleksovski-2026/online/exyu-smoke-test$query" | python3 -c 'import json,sys; d=json.load(sys.stdin);print("value",d.get("value"))'
           done
