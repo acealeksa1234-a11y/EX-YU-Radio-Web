@@ -70,3 +70,9 @@ body[data-theme="light"]{color-scheme:light;--bg:#edf4fa;--bg-deep:#e6eff7;--pan
 .visitor-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--raised);border-radius:999px;padding:6px 9px;font-size:10px;font-weight:650;color:var(--muted);white-space:nowrap}
 .visitor-chip strong{font-variant-numeric:tabular-nums;color:var(--text);font-weight:850}
 @media(max-width:620px){.status-row{flex-wrap:wrap}.live-and-visitors{width:100%;justify-content:flex-start;gap:12px}.visitor-chip{padding:4px 8px}}
+
+/* Counters v8: native text, no flaky third-party embedded image */
+a.online-counter-link{text-decoration:none;cursor:pointer;transition:color .18s,border-color .18s,background .18s}
+a.online-counter-link:hover{color:var(--accent);border-color:rgba(var(--accent-rgb),.55);background:rgba(var(--accent-rgb),.08)}
+.online-counter-link strong{font-size:12px;min-width:1.1em;text-align:center}
+.online-counter-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}

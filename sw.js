@@ -1,5 +1,5 @@
-const CACHE_NAME = 'ex-yu-radio-shell-v7';
-const FILES = ['./', './index.html', './styles.css?v=7', './app.js?v=7', './version.json', './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png'];
+const CACHE_NAME = 'ex-yu-radio-shell-v8';
+const FILES = ['./', './index.html', './styles.css?v=8', './app.js?v=8', './online.js?v=8', './statistika.html', './version.json', './manifest.webmanifest', './assets/icon-192.png', './assets/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
