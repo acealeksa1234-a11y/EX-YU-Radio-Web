@@ -1,0 +1,29 @@
+name: Verify EX-YU online statistics service
+on:
+  push:
+    paths:
+      - '.github/workflows/verify-online-service.yml'
+  workflow_dispatch:
+jobs:
+  check-counter-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CounterAPI response, JSON and browser CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl -sS -L --connect-timeout 10 --max-time 25 -D headers.txt -o body.json -w '%{http_code}'             -H 'Origin: https://acealeksa1234-a11y.github.io'             'https://counterapi.com/api/exyu-radio-aleksovski-2026/online/active?readOnly=true&timeline=2m&unique=true')
+          echo "HTTP status: $code"
+          head -c 1500 body.json; echo
+          echo "CORS headers:"
+          grep -i -E '^access-control-(allow-origin|allow-credentials)' headers.txt || true
+          test "$code" = 200
+          python3 - <<'PY'
+          import json
+          with open('body.json', encoding='utf-8') as f:
+              response = json.load(f)
+          if not isinstance(response, dict) or not isinstance(response.get('value'), (int,float)):
+              raise SystemExit('Invalid JSON response: expected numeric value')
+          print('JSON response value:', response['value'])
+          PY
+          grep -iq '^access-control-allow-origin:' headers.txt
